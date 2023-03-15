@@ -30,7 +30,7 @@ def main():
     emissionAltitudes = []
     for i in range(350000, 0, -5000):
         emission.append(250000 / (50000 * math.sqrt(2 * math.pi)) * \
-                         math.exp(-1 / 2 * (((i - 2500) - 200000) / 50000) ** 2))
+                         math.exp(-1 / 2 * (((i - 2500) - 300000) / 50000) ** 2))
         emissionAltitudes.append(i / 1000)
     
     # Generates the image and sets up its y-axis labels
@@ -55,23 +55,23 @@ def main():
     imgAx.set_yticks(yAxisLocations, yAxisValues)
     imgAx.set_title("Generated Image from Simulated Emission Profile")
     imgAx.set_ylabel("Tangent Point Altitude (km)")
-    imgFig.savefig("research/mighti-practice/graphs/Simulated Image (200km Peak).png")
+    imgFig.savefig("research/mighti-practice/graphs/Simulated Image (300km Peak).png")
 
     emFig, emAx = plt.subplots()
     emAx.set_title("Simulated Emission Profile")
     emAx.set_xlabel("Emission (modeled after a photons/cm^3/s emission graph)")
     emAx.set_ylabel("Altitude (km)")
     emAx.plot(emission, emissionAltitudes)
-    emFig.savefig("research/mighti-practice/graphs/Simulated Emission Profile (200km Peak).png")
+    emFig.savefig("research/mighti-practice/graphs/Simulated Emission Profile (300km Peak).png")
 
     profile = generateEmissionProfile(positions[0], lookVectors, np.delete(image, 1, axis=1))
     
     fig1, ax1 = plt.subplots()
-    ax1.set_title("Simulated Emission Profile from Image")
+    ax1.set_title("Emission Profile from Image")
     ax1.set_xlabel("Emission")
     ax1.set_ylabel("Altitude (km)")
     ax1.plot(profile[:, 0], profile[:, 1] / 1000)
-    fig1.savefig("research/mighti-practice/graphs/Simulated Emission Profile from Image (200km Peak).png")
+    fig1.savefig("research/mighti-practice/graphs/Simulated Emission Profile from Image (300km Peak).png")
 
     # distances = getLayerDistances(positions[0], lookVectors[0], 5000, 300000)
     # distancesValues = [[], []]
