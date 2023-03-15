@@ -30,32 +30,48 @@ def main():
     emissionAltitudes = []
     for i in range(350000, 0, -5000):
         emission.append(250000 / (50000 * math.sqrt(2 * math.pi)) * \
-                         math.exp(-1 / 2 * (((i - 2500) - 300000) / 50000) ** 2))
+                         math.exp(-1 / 2 * (((i - 2500) - 200000) / 50000) ** 2))
         emissionAltitudes.append(i / 1000)
     
+    # Generates the image and sets up its y-axis labels
     image = generateImage(positions[0], lookVectors, emission)
+    numPixels = 256
+    yAxisValues = []
+    for i in image[:, 1][0: numPixels: numPixels // 4]:
+        # Converts altitude to km with three decimal places
+        altitude = int(i) / 1000
+        yAxisValues.append(altitude)
+    # Converts altitude to km with three decimal places
+    altitude = int(image[numPixels - 1, 1]) / 1000
+    yAxisValues.append(altitude)
+    yAxisLocations = []
+    for i in range(0, numPixels, numPixels // 4):
+        yAxisLocations.append(i)
+    yAxisLocations.append(numPixels - 1)
 
     imgFig, imgAx = plt.subplots()
-    imgAx.imshow(image, cmap="afmhot", aspect=0.02)
+    imgAx.imshow(np.delete(image, 1, axis=1), cmap="afmhot", aspect=0.02)
     imgAx.set_xticks([])
-    imgAx.set_yticks([])
-    imgFig.savefig("research/mighti-practice/Simulated Image.png")
+    imgAx.set_yticks(yAxisLocations, yAxisValues)
+    imgAx.set_title("Generated Image from Simulated Emission Profile")
+    imgAx.set_ylabel("Tangent Point Altitude (km)")
+    imgFig.savefig("research/mighti-practice/graphs/Simulated Image (200km Peak).png")
 
     emFig, emAx = plt.subplots()
     emAx.set_title("Simulated Emission Profile")
     emAx.set_xlabel("Emission (modeled after a photons/cm^3/s emission graph)")
     emAx.set_ylabel("Altitude (km)")
     emAx.plot(emission, emissionAltitudes)
-    emFig.savefig("research/mighti-practice/Simulated Emission Profile.png")
+    emFig.savefig("research/mighti-practice/graphs/Simulated Emission Profile (200km Peak).png")
 
-    profile = generateEmissionProfile(positions[0], lookVectors, image)
+    profile = generateEmissionProfile(positions[0], lookVectors, np.delete(image, 1, axis=1))
     
     fig1, ax1 = plt.subplots()
     ax1.set_title("Simulated Emission Profile from Image")
     ax1.set_xlabel("Emission")
     ax1.set_ylabel("Altitude (km)")
     ax1.plot(profile[:, 0], profile[:, 1] / 1000)
-    fig1.savefig("research/mighti-practice/Simulated Emission Profile from Image.png")
+    fig1.savefig("research/mighti-practice/graphs/Simulated Emission Profile from Image (200km Peak).png")
 
     # distances = getLayerDistances(positions[0], lookVectors[0], 5000, 300000)
     # distancesValues = [[], []]
@@ -71,14 +87,14 @@ def main():
     # ax1.set_xlabel("Distance ray passes through layer (km)")
     # ax1.set_ylabel("Layer upper altitude (km)")
     # ax1.plot(distancesValues[0], distancesValues[1])
-    # fig1.savefig("research/mighti-practice/Ray distances per altitude.png")
+    # fig1.savefig("research/mighti-practice/graphs/Ray distances per altitude.png")
 
     # fig2, ax2 = plt.subplots()
     # ax2.set_title("Ray distance uncertainties per altitude layer (5km increments)")
     # ax2.set_xlabel("Ray distance uncertainty (km)")
     # ax2.set_ylabel("Layer upper altitude (km)")
     # ax2.plot(distancesUncertainties[0], distancesUncertainties[1])
-    # fig2.savefig("research/mighti-practice/Ray distance uncertainties per altitude.png")
+    # fig2.savefig("research/mighti-practice/graphs/Ray distance uncertainties per altitude.png")
 
 def generateEmissionProfile(pos, lookVectors, image):
     """Generates an image of the given airglow emission as a 256x1 matrix of floats
@@ -144,10 +160,12 @@ def generateImage(pos, lookVectors, emission):
     Returns:
     --------
     matrix
-        The image array, where the first values are the brightness of the top pixels and the
-        last being the brightness of the bottom pixels. Each array element is one pixel.
-        The matrix's shape is 256x1.
+        The image and the tangent point altitude for each pixel. The first column contains the
+        image emission data, and the second contains the tangent point altitudes. The first
+        rows are the top pixels and the last are the bottom pixels. Each array element is one
+        pixel. The matrix's shape is 256x2.
     """
+
     verticalResolution = 256
     layerThickness = 5000
     maxAltitude = 350000
@@ -165,7 +183,17 @@ def generateImage(pos, lookVectors, emission):
     image = np.zeros(np.shape(imageWithUncertainties))
     for i in range(0, verticalResolution):
         image[i, 0] = imageWithUncertainties[i, 0].n
-    return image
+    
+    # Adds tangent point altitudes to the image matrix
+    pixelLookVectors = lookInterpolate(lookVectors, verticalResolution)
+    tangentAltitudes = np.zeros((verticalResolution, 1))
+    for i in range(0, len(pixelLookVectors)):
+        tangentPointECEF = getTangentPoint(pos, pixelLookVectors[i])
+        tangentPointLLA = ECEFtoLLA(tangentPointECEF)
+        tangentPointAltitude = tangentPointLLA[2].n
+        tangentAltitudes[-i - 1, 0] = tangentPointAltitude
+
+    return np.concatenate((image, tangentAltitudes), axis=1)
 
 def generateMatrix(pos, lookVectors, verticalResolution, layerThickness, maxAltitude):
     """Generates the look vector/layer distances matrix
@@ -195,6 +223,7 @@ def generateMatrix(pos, lookVectors, verticalResolution, layerThickness, maxAlti
         layer j. j = 0 is the maxAltitude layer, j=1 is the maxAltitude - layerThickness layer,
         and so on.
     """
+    
     pixelLookVectors = lookInterpolate(lookVectors, verticalResolution)
 
     # Creates the empty matrix to be filled
