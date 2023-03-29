@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 from uncertainties import ufloat
 from uncertainties import umath
 from uncertainties import unumpy as unp
+import pyglow
+from datetime import datetime
 
 # Earth reference ellipsoid WGS84 parameters
 equatorRadius = ufloat(6378137, 1)
@@ -24,54 +26,60 @@ def main():
                               [0.00000001, 0.00000001, 0.00000001]),
                    unp.uarray([-0.29262921, 0.77109057, 0.56549758],
                               [0.00000001, 0.00000001, 0.00000001]),]
+    time = datetime(2021, 1, 1, 0, 0)
 
-    # Simulates an emission profile using a normal distribution
+    # Simulates an emission profile using pyglow
+    emissionLLA = ECEFtoLLA(getTangentPoint(positions[0], lookVectors[1]))
+    lat = emissionLLA[0].n
+    lon = (emissionLLA[1] - 360).n
     emission = []
     emissionAltitudes = []
-    for i in range(350000, 0, -5000):
-        emission.append(250000 / (50000 * math.sqrt(2 * math.pi)) * \
-                         math.exp(-1 / 2 * (((i - 2500) - 300000) / 50000) ** 2))
-        emissionAltitudes.append(i / 1000)
+    for altitude in range(350, 0, -5):
+        point = pyglow.Point(time, lat, lon, altitude)
+        # point = pyglow.Point(datetime(2015, 3, 23, 15, 30), 40, -80, 250)
+        point.run_airglow()
+        emission.append(point.ag6300)
+        emissionAltitudes.append(altitude)
     
     # Generates the image and sets up its y-axis labels
     image = generateImage(positions[0], lookVectors, emission)
     numPixels = 256
     yAxisValues = []
-    for i in image[:, 1][0: numPixels: numPixels // 4]:
+    for altitude in image[:, 1][0: numPixels: numPixels // 4]:
         # Converts altitude to km with three decimal places
-        altitude = int(i) / 1000
+        altitude = int(altitude) / 1000
         yAxisValues.append(altitude)
     # Converts altitude to km with three decimal places
     altitude = int(image[numPixels - 1, 1]) / 1000
     yAxisValues.append(altitude)
     yAxisLocations = []
-    for i in range(0, numPixels, numPixels // 4):
-        yAxisLocations.append(i)
+    for altitude in range(0, numPixels, numPixels // 4):
+        yAxisLocations.append(altitude)
     yAxisLocations.append(numPixels - 1)
 
     imgFig, imgAx = plt.subplots()
     imgAx.imshow(np.delete(image, 1, axis=1), cmap="afmhot", aspect=0.02)
     imgAx.set_xticks([])
     imgAx.set_yticks(yAxisLocations, yAxisValues)
-    imgAx.set_title("Generated Image from Simulated Emission Profile")
+    imgAx.set_title("Image from Pyglow Emission Profile")
     imgAx.set_ylabel("Tangent Point Altitude (km)")
-    imgFig.savefig("research/mighti-practice/graphs/Simulated Image (300km Peak).png")
+    imgFig.savefig("research/mighti-practice/graphs/Pyglow Simulated Image from Emission.png")
 
     emFig, emAx = plt.subplots()
-    emAx.set_title("Simulated Emission Profile")
-    emAx.set_xlabel("Emission (modeled after a photons/cm^3/s emission graph)")
+    emAx.set_title("Simulated Emission Profile (Pyglow)")
+    emAx.set_xlabel("Volume Emission Rate (photons/cm^3/s)")
     emAx.set_ylabel("Altitude (km)")
     emAx.plot(emission, emissionAltitudes)
-    emFig.savefig("research/mighti-practice/graphs/Simulated Emission Profile (300km Peak).png")
+    emFig.savefig("research/mighti-practice/graphs/Pyglow Simulated Emission Profile.png")
 
     profile = generateEmissionProfile(positions[0], lookVectors, np.delete(image, 1, axis=1))
     
     fig1, ax1 = plt.subplots()
-    ax1.set_title("Emission Profile from Image")
-    ax1.set_xlabel("Emission")
+    ax1.set_title("Derived Emission Profile from Pyglow Image")
+    ax1.set_xlabel("Volume Emission Rate (photons/cm^3/s)")
     ax1.set_ylabel("Altitude (km)")
     ax1.plot(profile[:, 0], profile[:, 1] / 1000)
-    fig1.savefig("research/mighti-practice/graphs/Simulated Emission Profile from Image (300km Peak).png")
+    fig1.savefig("research/mighti-practice/graphs/Pyglow Derived Emission Profile from Image.png")
 
     # distances = getLayerDistances(positions[0], lookVectors[0], 5000, 300000)
     # distancesValues = [[], []]
