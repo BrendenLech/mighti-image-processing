@@ -1,23 +1,13 @@
 # MIGHTI Image Processing
 
-Code to practice processing data from ICON's MIGHTI instrument. Below are two test cases with three generated images and graphs each. The first test case simulates emission following a normal distribution peaking at 200km altitude, and the second simulates emission peaking at 300km altitude.
+Code to practice processing data from ICON's MIGHTI instrument. Below is a simulation of 630nm nightglow emission using [Pyglow](https://github.com/timduly4/pyglow), a simulated image generated from that emission profile, and an emission profile derived back from that image.
 
 ## Images and Graphs:
 
-### Graphs and images for the case of maximum emission at 200km altitude:
+### Graphs and images for 630nm nightglow simulated using Pyglow:
 
-![Simulated emission profile for 200km altitude peak emission](https://github.com/BrendenLech/mighti-image-processing/blob/main/graphs/Simulated%20Emission%20Profile%20(200km%20Peak).png?raw=true)
+![Simulated emission profile using Pyglow](https://raw.githubusercontent.com/BrendenLech/mighti-image-processing/main/graphs/Pyglow%20Simulated%20Emission%20Profile.png)
 
-![Generated image from data for 200km altitude peak emission](https://github.com/BrendenLech/mighti-image-processing/blob/main/graphs/Simulated%20Image%20(200km%20Peak).png?raw=true)
+![Generated image from Pyglow simulation](https://raw.githubusercontent.com/BrendenLech/mighti-image-processing/main/graphs/Pyglow%20Simulated%20Image%20from%20Emission.png)
 
-![Generated emission from image for 200km altitude peak emission](https://github.com/BrendenLech/mighti-image-processing/blob/main/graphs/Simulated%20Emission%20Profile%20from%20Image%20(200km%20Peak).png?raw=true)
-
----
-
-### Graphs and images for the case of maximum emission at 300km altitude:
-
-![Simulated emission profile for 300km altitude peak emission](https://github.com/BrendenLech/mighti-image-processing/blob/main/graphs/Simulated%20Emission%20Profile%20(300km%20Peak).png?raw=true)
-
-![Generated image from data for 300km altitude peak emission](https://github.com/BrendenLech/mighti-image-processing/blob/main/graphs/Simulated%20Image%20(300km%20Peak).png?raw=true)
-
-![Generated emission from image for 300km altitude peak emission](https://github.com/BrendenLech/mighti-image-processing/blob/main/graphs/Simulated%20Emission%20Profile%20from%20Image%20(300km%20Peak).png?raw=true)
+![Derived emission profile from image for Pyglow simulation](https://raw.githubusercontent.com/BrendenLech/mighti-image-processing/main/graphs/Pyglow%20Derived%20Emission%20Profile%20from%20Image.png)
