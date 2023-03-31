@@ -86,7 +86,12 @@ def main():
     profileError = []
     for i in range(len(profile[:, 0])):
         altitude = profile[i, 1] / 1000
-        point = pyglow.Point(time, emissionSimLat, emissionSimLon, altitude)
+        # A correction in the altitude for re-simulated emission is needed here, because the
+        # original simulation is done at altitudes that are multiples of 5km, but the derived
+        # profile graphs the emission as originating in the middle of those layers (at altitudes
+        # that are multiples of 5km, minus 2.5km)
+        correction = 2.5
+        point = pyglow.Point(time, emissionSimLat, emissionSimLon, altitude + correction)
         point.run_airglow()
         profileError.append(profile[i, 0] - point.ag6300)
 
@@ -98,7 +103,7 @@ def main():
     figDiff.savefig("research/mighti-practice/graphs/Pyglow Profile Error Plot.png")
 
 def generateEmissionProfile(pos, lookVectors, image):
-    """Generates an image of the given airglow emission as a 256x1 matrix of floats
+    """Generates an emission profile from a 256x1 image of airglow
 
     Parameters:
     -----------
