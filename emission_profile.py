@@ -19,7 +19,7 @@ ePrime = umath.sqrt((equatorRadius ** 2 - polarRadius ** 2) / polarRadius ** 2)
 def main():
 
     # Given spacecraft position, look vectors, and correct tangent points, in ECEF (m)
-    positions = [unp.uarray([5657188.6, -2642459.2, 3071963.2], [0.1, 0.1, 0.1])]
+    position = unp.uarray([5657188.6, -2642459.2, 3071963.2], [0.1, 0.1, 0.1])
     lookVectors = [unp.uarray([-0.36734736, 0.78436053, 0.49983439],
                               [0.00000001, 0.00000001, 0.00000001]),
                    unp.uarray([-0.33040446, 0.77870637, 0.53333777],
@@ -29,20 +29,21 @@ def main():
     time = datetime(2021, 1, 1, 0, 0)
 
     # Simulates an emission profile using pyglow
-    emissionLLA = ECEFtoLLA(getTangentPoint(positions[0], lookVectors[1]))
-    lat = emissionLLA[0].n
-    lon = (emissionLLA[1] - 360).n
+    emissionLLA = ECEFtoLLA(getTangentPoint(position, lookVectors[1]))
+    emissionSimLat = emissionLLA[0].n
+    emissionSimLon = emissionLLA[1].n
     emission = []
     emissionAltitudes = []
     for altitude in range(350, 0, -5):
-        point = pyglow.Point(time, lat, lon, altitude)
-        # point = pyglow.Point(datetime(2015, 3, 23, 15, 30), 40, -80, 250)
+        point = pyglow.Point(time, emissionSimLat, emissionSimLon, altitude)
         point.run_airglow()
         emission.append(point.ag6300)
         emissionAltitudes.append(altitude)
     
-    # Generates the image and sets up its y-axis labels
-    image = generateImage(positions[0], lookVectors, emission)
+    # Generates the image
+    image = generateImage(position, lookVectors, emission)
+
+    # Labels the image's y-axis
     numPixels = 256
     yAxisValues = []
     for altitude in image[:, 1][0: numPixels: numPixels // 4]:
@@ -72,7 +73,7 @@ def main():
     emAx.plot(emission, emissionAltitudes)
     emFig.savefig("research/mighti-practice/graphs/Pyglow Simulated Emission Profile.png")
 
-    profile = generateEmissionProfile(positions[0], lookVectors, np.delete(image, 1, axis=1))
+    profile = generateEmissionProfile(position, lookVectors, np.delete(image, 1, axis=1))
     
     fig1, ax1 = plt.subplots()
     ax1.set_title("Derived Emission Profile from Pyglow Image")
@@ -80,29 +81,21 @@ def main():
     ax1.set_ylabel("Altitude (km)")
     ax1.plot(profile[:, 0], profile[:, 1] / 1000)
     fig1.savefig("research/mighti-practice/graphs/Pyglow Derived Emission Profile from Image.png")
-
-    # distances = getLayerDistances(positions[0], lookVectors[0], 5000, 300000)
-    # distancesValues = [[], []]
-    # distancesUncertainties = [[], []]
-    # for i in range(0, len(distances[0])):
-    #     distancesValues[0].append(distances[0][i].n / 1000)
-    #     distancesValues[1].append(distances[1][i] / 1000)
-    #     distancesUncertainties[0].append(distances[0][i].s / 1000)
-    #     distancesUncertainties[1].append(distances[1][i] / 1000)
     
-    # fig1, ax1 = plt.subplots()
-    # ax1.set_title("Ray distances per altitude layer (5km increments)")
-    # ax1.set_xlabel("Distance ray passes through layer (km)")
-    # ax1.set_ylabel("Layer upper altitude (km)")
-    # ax1.plot(distancesValues[0], distancesValues[1])
-    # fig1.savefig("research/mighti-practice/graphs/Ray distances per altitude.png")
+    # Simulates emission at the altitudes emission values were derived at
+    profileError = []
+    for i in range(len(profile[:, 0])):
+        altitude = profile[i, 1] / 1000
+        point = pyglow.Point(time, emissionSimLat, emissionSimLon, altitude)
+        point.run_airglow()
+        profileError.append(profile[i, 0] - point.ag6300)
 
-    # fig2, ax2 = plt.subplots()
-    # ax2.set_title("Ray distance uncertainties per altitude layer (5km increments)")
-    # ax2.set_xlabel("Ray distance uncertainty (km)")
-    # ax2.set_ylabel("Layer upper altitude (km)")
-    # ax2.plot(distancesUncertainties[0], distancesUncertainties[1])
-    # fig2.savefig("research/mighti-practice/graphs/Ray distance uncertainties per altitude.png")
+    figDiff, axDiff = plt.subplots()
+    axDiff.set_title("Error of Derived and True Emission Profile from Pyglow Image")
+    axDiff.set_xlabel("Difference of Derived VER from Actual VER (photons/cm^3/s)")
+    axDiff.set_ylabel("Altitude (km)")
+    axDiff.plot(profileError, profile[:, 1] / 1000)
+    figDiff.savefig("research/mighti-practice/graphs/Pyglow Profile Error Plot.png")
 
 def generateEmissionProfile(pos, lookVectors, image):
     """Generates an image of the given airglow emission as a 256x1 matrix of floats
